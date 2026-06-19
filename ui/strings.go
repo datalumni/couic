@@ -1,0 +1,32 @@
+package ui
+
+const (
+	WindowTitle       = "Couic — Découpage de fichiers"
+	BtnBrowse         = "Parcourir..."
+	BtnProcess        = "Traiter et découper"
+	LblFileSelected   = "Aucun fichier sélectionné"
+	LblRowsFound      = "Nombre de lignes trouvées : %d"
+	LblHasHeader      = "Le fichier a une ligne d'en-tête"
+	LblPrefix         = "Préfixe des fichiers de sortie"
+	LblSplitMode      = "Mode de découpage"
+	LblModeLines      = "Nombre de lignes par fichier"
+	LblModeFiles      = "Nombre total de fichiers"
+	LblResultCount    = "Nombre de fichiers résultants : %d"
+	LblRowsPerFile    = "Lignes par fichier : %d"
+	LblCalculation    = "En attente des données..."
+	BtnOK             = "OK"
+	BtnAnnuler        = "Annuler"
+	LblFichiersCSVXLS = "Fichiers CSV ou Excel (*.csv, *.xlsx)"
+
+	LogStart           = "Début du traitement..."
+	LogFileLoaded      = "Fichier chargé : %s (%d lignes)"
+	LogFileInvalid     = "Fichier invalide : %s"
+	LogValidationOK    = "Validation réussie — %d lignes valides"
+	LogValidationFail  = "Échec de validation — %d erreur(s) :"
+	LogValidationAbort = "Traitement annulé"
+	LogSplitting       = "Découpage en %d fichier(s)..."
+	LogWritten         = "Fichier créé : %s"
+	LogSuccess         = "Terminé — %d fichier(s) créé(s) dans %s"
+	LogError           = "Erreur : %s"
+	LogWarning         = "Attention : %s"
+)

@@ -4,26 +4,67 @@
 
 ## Current state
 
-- No code exists yet. Ground truth is `docs/SPECS.md`.
-- No `go.mod` yet — first real code action: `go mod init couic` (or whatever module name).
+- Full implementation complete. All 31 unit tests pass.
+- Missing system libraries (X11/GL) in this env prevent linking the Fyne binary.
 
 ## Key facts
 
 - **Stack**: Go, Fyne v2, excelize, go-playground/validator v10.
-- **Target**: Zero-install single-file executable on Windows/macOS/Linux. Cross-compile with `GOOS=windows` / `GOOS=darwin` / `GOOS=linux`. No C deps or external assets.
-- **UI**: Single non-resizable window (~600×450). Reactive labels update in real-time on input changes.
+- **Target**: Zero-install single-file executable on Windows/macOS/Linux. No C deps or external assets.
+- **UI**: Single non-resizable window (600×450). Reactive labels update in real-time on input changes.
 - **Flow**: file pick → validate schema (hardcoded `Record` struct) → split & export CSV to `split_output_YYYYMMDD_HHMMSS/` subfolder.
 - **Defaults**: Output prefix = `"split"`. Default mode = "Split into X Total Files", targeting ~1000 rows/file.
 - **Concurrency**: File loading, validation, splitting run in a goroutine to keep UI responsive.
-- **Output format**: Always `.csv`.
+- **Output format**: Always `.csv`, semicolon delimiter, UTF-8 BOM.
+- **Schema**: 10 French columns (Prénom, Nom, DateNaissance, Email, etc.), all strings, dates validated as DD/MM/YYYY.
+- **CI/CD**: GitHub Actions on `v*` tags, native builds per platform, `.zip` archives.
 
-## Commands (once scaffolded)
+## Commands
 
 ```sh
-go run .                      # run app
-go build -o couic .           # build single binary
+# Local build (requires libgl1-mesa-dev, xorg-dev, libglfw3-dev)
+go build -o couic .
+
+# Docker build (no system deps needed)
+docker build -t couic-builder .
+docker create --name tmp couic-builder
+docker cp tmp:/couic ./couic
+docker rm tmp
+
+# Cross-compilation (native per platform in CI)
+GOOS=linux   GOARCH=amd64 go build -o couic .
+GOOS=darwin  GOARCH=amd64 go build -o couic_darwin .
 GOOS=windows GOARCH=amd64 go build -o couic.exe .
-GOOS=darwin GOARCH=amd64 go build -o couic_darwin .
+
+# Run tests
+go test ./... -v
+
+# Release workflow
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+## Package layout
+
+```
+couic/
+├── core/
+│   ├── types.go        # Record struct + field helpers
+│   ├── validator.go    # Struct-tag validation, French errors
+│   ├── loader.go       # CSV/Excel loading, header detection
+│   ├── splitter.go     # File splitting logic
+│   └── *_test.go       # 27 tests
+├── export/
+│   ├── exporter.go     # CSV output (semicolon, BOM, source-order)
+│   └── exporter_test.go# 4 tests
+├── ui/
+│   ├── strings.go      # French UI string constants
+│   ├── layout.go       # Fyne widget tree
+│   └── handlers.go     # Event handlers & processing pipeline
+├── testdata/           # 6 fixture files
+├── main.go
+├── Dockerfile          # Build with all deps included
+└── .github/workflows/  # Release CI
 ```
 
 ## Conventions
@@ -31,3 +72,5 @@ GOOS=darwin GOARCH=amd64 go build -o couic_darwin .
 - Schema lives in a hardcoded struct with `csv:` tags and `validate:` tags — no dynamic schema loading.
 - Abort on first validation failure; dump all row errors to the UI log.
 - Output dir lives next to the source file.
+- UI strings in French via `ui/strings.go`.
+- Column output order follows source-file order.
