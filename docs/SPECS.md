@@ -12,7 +12,11 @@
 
 ## 2. User Interface (UI) Requirements
 
-The UI must be clean, responsive, and fit inside a single, non-resizable window (suggested: $600 \times 450$ pixels). It should contain the following components arranged vertically:
+The UI must be clean, responsive, and fit inside a single, non-resizable window (suggested: $600 \times 450$ pixels).
+
+**Language:** French. All UI labels, buttons, messages, and log output are hard-coded in French in `ui/strings.go`. No i18n/l10n framework is used (can be added later if needed). Native OS dialogs (file picker, etc.) remain in the system language.
+
+It should contain the following components arranged vertically:
 
 1. **File Selection Section:**
 * A "Browse File" button that opens a native OS file picker filtering for `.csv` and `.xlsx` files.
@@ -124,3 +128,37 @@ If validation passes, split the data and write the output files to a **new subfo
 * **Artifacts:** Each archive contains the single executable. Checksums auto-generated.
 * **Release:** goreleaser creates a GitHub Release and uploads all `.zip` archives + checksums.
 * **Go version:** `1.22` (pinned). No C dependencies or external assets required.
+
+---
+
+## 6. Testing
+
+### 6.1 Unit Tests (core logic — no UI dependency)
+
+| Package | File | What to test |
+|---|---|---|
+| `core/validator_test.go` | Validate each field of `Record` (`id`, `email`, `age`, `status`). Abort on first invalid row. |
+| `core/loader_test.go` | CSV/Excel loading, header detection (≥2 matches → header), delimiter auto-detect (`,` vs `;`), case-insensitive mapping, error on missing file. |
+| `core/splitter_test.go` | Even distribution (total-files mode), rows-per-file mode, uneven last chunk, output dir naming. |
+| `export/exporter_test.go` | Semicolon delimiter, UTF-8 BOM, proper CSV quoting, empty file edge-case. |
+
+### 6.2 UI Tests
+
+Use the Fyne `test` package (`fyne.io/fyne/v2/test`):
+- Widget state transitions: header checkbox toggling, mode radio switch, file pick OK/cancel.
+- Reactive label updates on input changes.
+- Process button enabled/disabled state.
+
+### 6.3 Test Fixtures
+
+- Small valid CSV with `,` and `;` delimiters.
+- Small valid Excel (`.xlsx`).
+- CSV with headers / without headers.
+- Invalid data (missing fields, bad email, non-numeric age).
+- Empty file.
+
+### 6.4 Run Command
+
+```sh
+go test ./... -v
+```
