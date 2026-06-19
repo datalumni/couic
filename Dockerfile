@@ -1,4 +1,4 @@
-FROM golang:1.22-bookworm AS builder
+FROM golang:bookworm AS builder
 
 RUN apt-get update -qq && apt-get install -y -qq \
     libgl1-mesa-dev \
