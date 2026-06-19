@@ -11,16 +11,17 @@ import (
 )
 
 type UI struct {
-	BrowseBtn      *widget.Button
-	FilePathEntry  *widget.Entry
-	RowsInfoLabel  *widget.Label
+	BrowseBtn     *widget.Button
+	FilePathEntry *widget.Entry
+	RowsInfoLabel *widget.Label
 	HasHeaderCheck *widget.Check
-	PrefixEntry    *widget.Entry
-	ModeGroup      *widget.RadioGroup
-	NumEntry       *widget.Entry
-	CalcLabel      *widget.Label
-	ProcessBtn     *widget.Button
-	LogArea        *widget.Entry
+	PrefixEntry   *widget.Entry
+	ModeGroup     *widget.RadioGroup
+	NumEntry      *widget.Entry
+	CalcLabel     *widget.Label
+	ValidateBtn   *widget.Button
+	ProcessBtn    *widget.Button
+	LogArea       *widget.Entry
 
 	totalRows int
 }
@@ -50,6 +51,10 @@ func BuildUI() *UI {
 	ui.NumEntry.SetText("")
 
 	ui.CalcLabel = widget.NewLabel(LblCalculation)
+
+	ui.ValidateBtn = widget.NewButton(BtnValidate, nil)
+	ui.ValidateBtn.Importance = widget.LowImportance
+	ui.ValidateBtn.Disable()
 
 	ui.ProcessBtn = widget.NewButton(BtnProcess, nil)
 	ui.ProcessBtn.Importance = widget.HighImportance
@@ -86,6 +91,8 @@ func (ui *UI) PopulateWindow(win fyne.Window) {
 			ui.NumEntry,
 			ui.CalcLabel,
 		),
+		ui.ValidateBtn,
+		widget.NewSeparator(),
 		ui.ProcessBtn,
 	)
 	optionsCard := widget.NewCard(LblCardOptions, "", optionsContent)

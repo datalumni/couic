@@ -216,18 +216,18 @@ func detectHeader(firstRow []string) (bool, []string) {
 
 func buildColumnOrder(headerRow []string, tagToIdx map[string]int) []int {
 	order := make([]int, 0, len(headerRow))
-	for _, col := range headerRow {
+	for colIdx, col := range headerRow {
 		lower := strings.ToLower(col)
-		found := false
+		matched := false
 		for tag, idx := range tagToIdx {
 			if strings.ToLower(tag) == lower {
 				order = append(order, idx)
-				found = true
+				matched = true
 				break
 			}
 		}
-		if !found {
-			order = append(order, -1)
+		if !matched {
+			order = append(order, colIdx)
 		}
 	}
 	return order
@@ -246,7 +246,7 @@ func rowToRecord(row []string, colOrder []int) (*Record, error) {
 	rec := &Record{}
 	rv := reflect.ValueOf(rec).Elem()
 	for j, fieldIdx := range colOrder {
-		if fieldIdx < 0 || j >= len(row) {
+		if fieldIdx < 0 || fieldIdx >= rv.NumField() || j >= len(row) {
 			continue
 		}
 		rv.Field(fieldIdx).SetString(strings.TrimSpace(row[j]))

@@ -20,6 +20,26 @@ type loadState struct {
 	path   string
 }
 
+type getRecordsResult struct {
+	records  []core.Record
+	colOrder []int
+}
+
+func getRecords(state *loadState, hasHeader bool) (*getRecordsResult, error) {
+	if hasHeader && state.result.HasHeader {
+		return &getRecordsResult{state.result.Records, state.result.ColumnOrder}, nil
+	} else if !hasHeader && !state.result.HasHeader {
+		return &getRecordsResult{state.result.Records, state.result.ColumnOrder}, nil
+	}
+
+	relRes, loadErr := core.LoadFile(state.path)
+	if loadErr != nil {
+		return nil, loadErr
+	}
+	relRes.HasHeader = hasHeader
+	return &getRecordsResult{relRes.Records, relRes.ColumnOrder}, nil
+}
+
 func SetupHandlers(ui *UI, win fyne.Window) {
 	var state *loadState
 
@@ -38,6 +58,7 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 			ui.HasHeaderCheck.SetChecked(res.HasHeader)
 
 			prefillSplitParams(ui, res.TotalRows)
+			ui.ValidateBtn.Enable()
 			ui.ProcessBtn.Enable()
 		}()
 	}
@@ -75,13 +96,35 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 		}
 	})
 
-	ui.ProcessBtn.OnTapped = func() {
+	ui.ValidateBtn.OnTapped = func() {
 		if state == nil {
 			return
 		}
 
-		ui.LogArea.SetText("")
-		logMessage(ui, LogStart)
+		hasHeader := ui.HasHeaderCheck.Checked
+
+		go func() {
+			gr, err := getRecords(state, hasHeader)
+			if err != nil {
+				logError(ui, err.Error())
+				return
+			}
+
+			errs := core.ValidateRecords(gr.records)
+			if len(errs) == 0 {
+				logMessage(ui, LogValidateNone)
+				return
+			}
+			for _, e := range errs {
+				logMessage(ui, e.String())
+			}
+		}()
+	}
+
+	ui.ProcessBtn.OnTapped = func() {
+		if state == nil {
+			return
+		}
 
 		prefix := ui.PrefixEntry.Text
 		if strings.TrimSpace(prefix) == "" {
@@ -93,44 +136,20 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 		num, _ := strconv.Atoi(numStr)
 
 		go func() {
-			var records []core.Record
-			var colOrder []int
-
-			if hasHeader && state.result.HasHeader {
-				records = state.result.Records
-				colOrder = state.result.ColumnOrder
-			} else if !hasHeader && !state.result.HasHeader {
-				records = state.result.Records
-				colOrder = state.result.ColumnOrder
-			} else {
-				relPath := state.path
-				relRes, loadErr := core.LoadFile(relPath)
-				if loadErr != nil {
-					logError(ui, loadErr.Error())
-					return
-				}
-				relRes.HasHeader = hasHeader
-				records = relRes.Records
-				colOrder = relRes.ColumnOrder
-			}
-
-			errs := core.ValidateRecords(records)
-			if len(errs) > 0 {
-				logMessage(ui, fmt.Sprintf(LogValidationFail, len(errs)))
-				for _, e := range errs {
-					logMessage(ui, e.String())
-				}
-				logMessage(ui, LogValidationAbort)
+			gr, err := getRecords(state, hasHeader)
+			if err != nil {
+				logError(ui, err.Error())
 				return
 			}
 
-			logMessage(ui, fmt.Sprintf(LogValidationOK, len(records)))
+			ui.LogArea.SetText("")
+			logMessage(ui, LogStart)
 
 			var chunks [][]core.Record
 			if mode == LblModeLines {
-				chunks = core.SplitByLines(records, num)
+				chunks = core.SplitByLines(gr.records, num)
 			} else {
-				chunks = core.SplitByFiles(records, num)
+				chunks = core.SplitByFiles(gr.records, num)
 			}
 
 			logMessage(ui, fmt.Sprintf(LogSplitting, len(chunks)))
@@ -140,7 +159,7 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 				fmt.Sprintf("split_output_%s", time.Now().Format("20060102_150405")),
 			)
 
-			paths, err := export.WriteAll(outputDir, prefix, chunks, colOrder)
+			paths, err := export.WriteAll(outputDir, prefix, chunks, gr.colOrder)
 			if err != nil {
 				logError(ui, err.Error())
 				return
