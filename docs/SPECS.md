@@ -60,7 +60,7 @@ It should contain the following components arranged vertically:
 * Determine file type via extension (`.csv` or `.xlsx`).
 * Open the file briefly to calculate the total row count (minus header) and immediately update the UI labels with the row count.
 * **Excel:** Read only the **first sheet**. If the workbook contains more than one sheet, log a warning.
-* **Header auto-detection:** Parse the first row and check if its values resemble `Record` field names (`id`, `email`, `age`, `status`) **case-insensitively**. If at least 2 columns match, treat the row as a header. Otherwise treat it as data. The user can override this via the "Has Header Row" checkbox.
+* **Header auto-detection:** Parse the first row and check if its values resemble `Record` field names (`Prénom de l'utilisateur`, `Nom de l'utilisateur`, `Date de naissance`, `Email`, `Référence externe`, `Catégorie`, `Date de fin`, `Diplôme`, `Site`, `N° RNCP`) **case-insensitively**. If at least 2 columns match, treat the row as a header. Otherwise treat it as data. The user can override this via the "Has Header Row" checkbox.
 * **CSV input delimiter auto-detection:** Sample the first 2–3 lines. Count `,` vs `;` occurrences per line. The delimiter that yields the most consistent column count across lines wins. On a tie, default to comma.
 * **CSV header mapping:** Column headers are matched to `Record` struct fields **case-insensitively**.
 
@@ -84,15 +84,20 @@ Before any file splitting occurs, validate **every row** against a strict, hardc
 
 ```go
 type Record struct {
-    ID        int    `csv:"id" validate:"required,numeric"`
-    Email     string `csv:"email" validate:"required,email"`
-    Age       int    `csv:"age" validate:"gte=0,lte=120"`
-    Status    string `csv:"status" validate:"oneof=active pending inactive"`
+    PrenomUtilisateur string `csv:"Prénom de l'utilisateur" validate:"required,min=1"`
+    NomUtilisateur    string `csv:"Nom de l'utilisateur" validate:"required,min=1"`
+    DateNaissance     string `csv:"Date de naissance" validate:"omitempty,datetime=02/01/2006"`
+    Email             string `csv:"Email" validate:"required,email"`
+    ReferenceExterne  string `csv:"Référence externe" validate:"omitempty,min=1"`
+    Categorie         string `csv:"Catégorie" validate:"required,min=1"`
+    DateFin           string `csv:"Date de fin" validate:"omitempty,datetime=02/01/2006"`
+    Diplome           string `csv:"Diplôme" validate:"omitempty,min=1"`
+    Site              string `csv:"Site" validate:"omitempty,min=1"`
+    NumeroRNCP        string `csv:"N° RNCP" validate:"omitempty,min=1"`
 }
-
 ```
 
-* **Error Handling:** If *any* row fails validation, abort the entire process. Collect all validation errors (e.g., `"Row 45: Email is invalid"`) and print them out clearly in the UI Log Terminal. Do not generate output files if validation fails.
+* **Error Handling:** If *any* row fails validation, abort the entire process. Collect all validation errors (e.g., `"Ligne 45 : Email invalide"`) and print them out clearly in the UI Log Terminal. Do not generate output files if validation fails.
 
 ### Step 4: Splitting & Exporting
 
@@ -137,7 +142,7 @@ If validation passes, split the data and write the output files to a **new subfo
 
 | Package | File | What to test |
 |---|---|---|
-| `core/validator_test.go` | Validate each field of `Record` (`id`, `email`, `age`, `status`). Abort on first invalid row. |
+| `core/validator_test.go` | Validate each field of `Record` (10 fields: Prénom, Nom, DateNaissance, Email, RéférenceExterne, Catégorie, DateFin, Diplôme, Site, NuméroRNCP). Abort on first invalid row. |
 | `core/loader_test.go` | CSV/Excel loading, header detection (≥2 matches → header), delimiter auto-detect (`,` vs `;`), case-insensitive mapping, error on missing file. |
 | `core/splitter_test.go` | Even distribution (total-files mode), rows-per-file mode, uneven last chunk, output dir naming. |
 | `export/exporter_test.go` | Semicolon delimiter, UTF-8 BOM, proper CSV quoting, empty file edge-case. |
