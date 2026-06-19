@@ -11,8 +11,14 @@
 
 - **Stack**: Go, Fyne v2, excelize, go-playground/validator v10.
 - **Target**: Zero-install single-file executable on Windows/macOS/Linux. No C deps or external assets.
-- **UI**: Single non-resizable window (600×450). Reactive labels update in real-time on input changes.
-- **Flow**: file pick → validate schema (hardcoded `Record` struct) → split & export CSV to `split_output_YYYYMMDD_HHMMSS/` subfolder.
+- **UI**: Single non-resizable window (600×500). Reactive labels update in real-time on input changes.
+- Three `widget.Card` sections: Fichier, Options d'export, Journal.
+- `widget.Separator` between logical option groups within the Options card.
+- `widget.HighImportance` on the Process button (accent color).
+- `theme.FolderOpenIcon` on the Browse button.
+- File path `widget.Entry` with placeholder (paste path or drag-and-drop).
+- `win.SetOnDropped()` accepts `.csv`/`.xlsx` drops from file manager.
+- **Flow**: file pick (browse / paste path / drag-drop) → validate schema (hardcoded `Record` struct) → split & export CSV to `split_output_YYYYMMDD_HHMMSS/` subfolder.
 - **Defaults**: Output prefix = `"split"`. Default mode = "Split into X Total Files", targeting ~1000 rows/file.
 - **Concurrency**: File loading, validation, splitting run in a goroutine to keep UI responsive.
 - **Output format**: Always `.csv`, semicolon delimiter, UTF-8 BOM.

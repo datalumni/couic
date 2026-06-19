@@ -10,7 +10,7 @@ import (
 func main() {
 	a := app.New()
 	w := a.NewWindow(ui.WindowTitle)
-	w.Resize(fyne.NewSize(600, 450))
+	w.Resize(fyne.NewSize(600, 500))
 	w.SetFixedSize(true)
 
 	uiWidgets := ui.BuildUI()

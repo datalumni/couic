@@ -6,12 +6,13 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 type UI struct {
 	BrowseBtn      *widget.Button
-	FilePathLabel  *widget.Label
+	FilePathEntry  *widget.Entry
 	RowsInfoLabel  *widget.Label
 	HasHeaderCheck *widget.Check
 	PrefixEntry    *widget.Entry
@@ -28,7 +29,11 @@ func BuildUI() *UI {
 	ui := &UI{}
 
 	ui.BrowseBtn = widget.NewButton(BtnBrowse, nil)
-	ui.FilePathLabel = widget.NewLabel(LblFileSelected)
+	ui.BrowseBtn.Icon = theme.FolderOpenIcon()
+
+	ui.FilePathEntry = widget.NewEntry()
+	ui.FilePathEntry.SetPlaceHolder(LblFilePlaceholder)
+
 	ui.RowsInfoLabel = widget.NewLabel("")
 
 	ui.HasHeaderCheck = widget.NewCheck(LblHasHeader, nil)
@@ -47,6 +52,7 @@ func BuildUI() *UI {
 	ui.CalcLabel = widget.NewLabel(LblCalculation)
 
 	ui.ProcessBtn = widget.NewButton(BtnProcess, nil)
+	ui.ProcessBtn.Importance = widget.HighImportance
 	ui.ProcessBtn.Disable()
 
 	ui.LogArea = widget.NewMultiLineEntry()
@@ -60,31 +66,39 @@ func BuildUI() *UI {
 }
 
 func (ui *UI) PopulateWindow(win fyne.Window) {
+	fileCard := widget.NewCard(LblCardFile, "", container.NewVBox(
+		ui.BrowseBtn,
+		ui.FilePathEntry,
+		ui.RowsInfoLabel,
+	))
+
+	optionsContent := container.NewVBox(
+		ui.HasHeaderCheck,
+		widget.NewSeparator(),
+		container.NewVBox(
+			widget.NewLabel(LblPrefix),
+			ui.PrefixEntry,
+		),
+		widget.NewSeparator(),
+		container.NewVBox(
+			widget.NewLabel(LblSplitMode),
+			ui.ModeGroup,
+			ui.NumEntry,
+			ui.CalcLabel,
+		),
+		ui.ProcessBtn,
+	)
+	optionsCard := widget.NewCard(LblCardOptions, "", optionsContent)
+
+	logCard := widget.NewCard(LblCardLog, "", ui.LogArea)
+
 	content := container.NewPadded(
 		container.NewVBox(
-			container.NewVBox(
-				ui.BrowseBtn,
-				ui.FilePathLabel,
-				ui.RowsInfoLabel,
-			),
-			ui.HasHeaderCheck,
-			container.NewVBox(
-				widget.NewLabel(LblPrefix),
-				ui.PrefixEntry,
-			),
-			container.NewVBox(
-				widget.NewLabel(LblSplitMode),
-				ui.ModeGroup,
-				ui.NumEntry,
-				ui.CalcLabel,
-			),
-			widget.NewLabel(""),
-			ui.ProcessBtn,
-			widget.NewLabel("Journal"),
-			ui.LogArea,
+			fileCard,
+			optionsCard,
+			logCard,
 		),
 	)
-
 	win.SetContent(content)
 }
 

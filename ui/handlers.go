@@ -23,20 +23,7 @@ type loadState struct {
 func SetupHandlers(ui *UI, win fyne.Window) {
 	var state *loadState
 
-	ui.BrowseBtn.OnTapped = func() {
-		fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-		if err != nil {
-			logError(ui, err.Error())
-			return
-		}
-		if reader == nil {
-			return
-		}
-		defer reader.Close()
-
-		path := reader.URI().Path()
-		ui.FilePathLabel.SetText(path)
-
+	loadFile := func(path string) {
 		go func() {
 			res, loadErr := core.LoadFile(path)
 			if loadErr != nil {
@@ -45,16 +32,48 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 			}
 
 			state = &loadState{result: res, path: path}
-			ui.SetRowsInfo(res.TotalRows)
+			ui.FilePathEntry.SetText(path)
+			ui.RowsInfoLabel.SetText(fmt.Sprintf(LblRowsFound, res.TotalRows))
 
 			ui.HasHeaderCheck.SetChecked(res.HasHeader)
 
 			prefillSplitParams(ui, res.TotalRows)
+			ui.ProcessBtn.Enable()
 		}()
-	}, win)
-	fd.SetFilter(storage.NewExtensionFileFilter([]string{".csv", ".xlsx"}))
-	fd.Show()
 	}
+
+	ui.BrowseBtn.OnTapped = func() {
+		fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil {
+				logError(ui, err.Error())
+				return
+			}
+			if reader == nil {
+				return
+			}
+			defer reader.Close()
+			loadFile(reader.URI().Path())
+		}, win)
+		fd.SetFilter(storage.NewExtensionFileFilter([]string{".csv", ".xlsx"}))
+		fd.Show()
+	}
+
+	ui.FilePathEntry.OnSubmitted = func(path string) {
+		path = strings.TrimSpace(path)
+		if path != "" {
+			loadFile(path)
+		}
+	}
+
+	win.SetOnDropped(func(_ fyne.Position, uris []fyne.URI) {
+		for _, uri := range uris {
+			ext := filepath.Ext(uri.Name())
+			if ext == ".csv" || ext == ".xlsx" {
+				loadFile(uri.Path())
+				return
+			}
+		}
+	})
 
 	ui.ProcessBtn.OnTapped = func() {
 		if state == nil {
