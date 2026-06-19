@@ -106,3 +106,21 @@ If validation passes, split the data and write the output files to a **new subfo
 * **Reactive UI State:** Ensure that changing the split mode radio buttons or typing inside the numeric input triggers a re-calculation function that safely handles dividing by zero or empty inputs without crashing.
 * **Concurrency:** Run the file loading, validation, and splitting operations inside a separate goroutine so that the Fyne UI remains smooth and responsive during processing.
 * **No Install Packaging:** Ensure the code does not rely on local C libraries or external assets so it can be cross-compiled cleanly using standard Go cross-compilation tools (`GOOS=windows`, `GOOS=darwin`, `GOOS=linux`).
+
+---
+
+## 5. CI/CD & Release
+
+* **Platform:** GitHub Actions.
+* **Trigger:** Push on any tag matching `v*` (e.g. `v1.0.0`, `v2.3.4`).
+* **Tool:** [goreleaser](https://goreleaser.com) — standard Go release automation.
+* **Targets (cross-compile):**
+  - Linux   → `GOOS=linux`   `GOARCH=amd64`
+  - Mac     → `GOOS=darwin`  `GOARCH=amd64`
+  - Windows → `GOOS=windows` `GOARCH=amd64`
+* **Archive format:** `.zip` for all platforms.
+* **Binary naming:** `couic-v<version>-<Platform>.zip`
+  - Examples: `couic-v1.2.3-Linux.zip`, `couic-v1.2.3-Mac.zip`, `couic-v1.2.3-Windows.zip`
+* **Artifacts:** Each archive contains the single executable. Checksums auto-generated.
+* **Release:** goreleaser creates a GitHub Release and uploads all `.zip` archives + checksums.
+* **Go version:** `1.22` (pinned). No C dependencies or external assets required.
