@@ -19,32 +19,30 @@ The UI must be clean, responsive, and fit inside a single, non-resizable window 
 * A label showing the currently selected file path.
 * **Dynamic File Info Label:** A text label that dynamically updates upon file selection to show: `Total Rows Found: [Count]` (excluding the header row).
 
+2. **Header Row Checkbox:**
+* A labeled checkbox **"Has Header Row"**, default checked.
+* Upon file load, the app auto-detects whether the first row is a header (see §3.1).
+* The user can override the detection by toggling this checkbox.
 
-2. **Naming Configuration Section:**
+3. **Naming Configuration Section:**
 * An entry/input field labeled **"Output File Prefix"**.
 * **Crucial:** This field must be **prefilled with the string `"split"` by default**.
 * The final output files will use this prefix (e.g., `split-1.csv`, `split-2.csv`).
 
-
-3. **Splitting Configuration Section:**
+4. **Splitting Configuration Section:**
 * A radio button or dropdown to select the split mode:
 * `[ ] Split by Number of Lines per file`
 * `[ ] Split into X Total Files`
 
-
-* A numeric input field to enter the integer value ($X$) for the chosen mode.
+* A numeric input field to enter the integer value ($X$, must be > 0) for the chosen mode.
 * **Live Calculation Label:** A reactive label right below the input that updates in real time whenever the user changes the split mode or types a number.
 * If *Lines per file* is selected, it calculates: `Resulting Files: [Total Rows / X]`
 * If *Total Files* is selected, it calculates: `Rows per File: [Total Rows / X]`
 
+5. **Execution Button:**
+* A prominent "Process & Split File" button (disabled until a valid file is loaded and a valid split number > 0 is entered).
 
-
-
-4. **Execution Button:**
-* A prominent "Process & Split File" button (disabled until a valid file is loaded and a valid split number is entered).
-
-
-5. **Output / Log Terminal:**
+6. **Output / Log Terminal:**
 * A scrollable, read-only text area at the bottom to display real-time logs, validation errors, or success metrics.
 
 
@@ -57,6 +55,10 @@ The UI must be clean, responsive, and fit inside a single, non-resizable window 
 
 * Determine file type via extension (`.csv` or `.xlsx`).
 * Open the file briefly to calculate the total row count (minus header) and immediately update the UI labels with the row count.
+* **Excel:** Read only the **first sheet**. If the workbook contains more than one sheet, log a warning.
+* **Header auto-detection:** Parse the first row and check if its values resemble `Record` field names (`id`, `email`, `age`, `status`) **case-insensitively**. If at least 2 columns match, treat the row as a header. Otherwise treat it as data. The user can override this via the "Has Header Row" checkbox.
+* **CSV input delimiter auto-detection:** Sample the first 2–3 lines. Count `,` vs `;` occurrences per line. The delimiter that yields the most consistent column count across lines wins. On a tie, default to comma.
+* **CSV header mapping:** Column headers are matched to `Record` struct fields **case-insensitively**.
 
 ### Step 2: Smart Parameters Prefill (Hardcoded Smart Logic)
 
@@ -94,8 +96,8 @@ If validation passes, split the data and write the output files to a **new subfo
 
 * **File Naming:** Use the prefix from the UI input field followed by a hyphen and the incrementing index. If the prefix is `custom-name`, files must be named `custom-name-1.csv`, `custom-name-2.csv`, etc.
 * **Mode A (Lines per file):** If the user inputs $1000$, every output file contains exactly $1000$ lines (plus the original header), with the last file containing the remainder.
-* **Mode B (Total files):** If the user inputs $5$, evenly distribute the rows across exactly $5$ files.
-* **Format:** Output files should always be exported as `.csv`.
+* **Mode B (Total files):** If the user inputs $5$, evenly distribute the rows across exactly $5$ files. The **last file gets fewer rows** if the division is uneven.
+* **Output format:** Always `.csv`. Delimiter is always **semicolon (`;`)**. Encoding is **UTF-8 with BOM** for Excel compatibility on Windows.
 
 ---
 
