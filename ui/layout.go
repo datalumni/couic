@@ -3,6 +3,7 @@
 import (
 	_ "embed"
 	"fmt"
+	"image/color"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -51,7 +52,7 @@ func BuildUI() *UI {
 	ui.PrefixEntry.SetText("split")
 
 	ui.ModeGroup = widget.NewRadioGroup([]string{LblModeLines, LblModeFiles}, nil)
-	ui.ModeGroup.Horizontal = false
+	ui.ModeGroup.Horizontal = true
 	ui.ModeGroup.Required = true
 
 	ui.NumEntry = widget.NewEntry()
@@ -60,7 +61,7 @@ func BuildUI() *UI {
 	ui.CalcLabel = widget.NewLabel(LblCalculation)
 
 	ui.ValidateBtn = widget.NewButton(BtnValidate, nil)
-	ui.ValidateBtn.Importance = widget.LowImportance
+	ui.ValidateBtn.Importance = widget.WarningImportance
 	ui.ValidateBtn.Disable()
 
 	ui.ProcessBtn = widget.NewButton(BtnProcess, nil)
@@ -77,46 +78,48 @@ func BuildUI() *UI {
 	return ui
 }
 
+func padRight(obj fyne.CanvasObject) fyne.CanvasObject {
+	pad := canvas.NewRectangle(color.Transparent)
+	pad.SetMinSize(fyne.NewSize(10, 1))
+	return container.NewBorder(nil, nil, nil, pad, obj)
+}
+
+func padLeft(obj fyne.CanvasObject) fyne.CanvasObject {
+	pad := canvas.NewRectangle(color.Transparent)
+	pad.SetMinSize(fyne.NewSize(10, 1))
+	return container.NewBorder(nil, nil, pad, nil, obj)
+}
+
 func (ui *UI) PopulateWindow(win fyne.Window) {
 	logo := canvas.NewImageFromResource(LogoResource)
 	logo.FillMode = canvas.ImageFillContain
-	logo.SetMinSize(fyne.NewSize(600, 80))
+	logo.SetMinSize(fyne.NewSize(280, 55))
 
-	fileCard := widget.NewCard(LblCardFile, "", container.NewVBox(
-		ui.BrowseBtn,
-		ui.FilePathEntry,
-		ui.RowsInfoLabel,
-	))
-
-	optionsContent := container.NewVBox(
-		ui.HasHeaderCheck,
-		widget.NewSeparator(),
-		container.NewVBox(
+	grid := container.NewGridWithColumns(2,
+		padRight(logo),
+		padLeft(container.NewVBox(
 			widget.NewLabel(LblPrefix),
 			ui.PrefixEntry,
-		),
-		widget.NewSeparator(),
-		container.NewVBox(
+		)),
+		padRight(container.NewVBox(
+			container.NewBorder(nil, nil, nil, ui.BrowseBtn, ui.FilePathEntry),
+			ui.RowsInfoLabel,
+		)),
+		padLeft(container.NewVBox(
 			widget.NewLabel(LblSplitMode),
 			ui.ModeGroup,
+		)),
+		padRight(ui.HasHeaderCheck),
+		padLeft(container.NewVBox(
 			ui.NumEntry,
 			ui.CalcLabel,
-		),
-		ui.ValidateBtn,
-		widget.NewSeparator(),
-		ui.ProcessBtn,
+		)),
+		padRight(container.NewCenter(ui.ValidateBtn)),
+		padLeft(container.NewCenter(ui.ProcessBtn)),
 	)
-	optionsCard := widget.NewCard(LblCardOptions, "", optionsContent)
-
-	logCard := widget.NewCard(LblCardLog, "", ui.LogArea)
 
 	content := container.NewPadded(
-		container.NewVBox(
-			logo,
-			fileCard,
-			optionsCard,
-			logCard,
-		),
+		container.NewBorder(grid, nil, nil, nil, ui.LogArea),
 	)
 	win.SetContent(content)
 }
