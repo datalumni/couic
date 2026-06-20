@@ -4,7 +4,7 @@ const (
 	WindowTitle       = "Couic — Découpage de fichiers"
 	BtnBrowse         = "Parcourir..."
 	BtnValidate       = "Valider les données"
-	BtnProcess        = "Traiter et découper"
+	BtnProcess        = "Découper"
 	LblRowsFound      = "Nombre de lignes trouvées : %d"
 	LblHasHeader      = "Le fichier a une ligne d'en-tête"
 	LblPrefix         = "Préfixe des fichiers de sortie"

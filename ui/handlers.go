@@ -2,7 +2,9 @@
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -171,8 +173,20 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 				logMessage(ui, fmt.Sprintf(LogWritten, p))
 			}
 
-			logMessage(ui, fmt.Sprintf(LogSuccess, len(chunks), outputDir))
-		}()
+		logMessage(ui, fmt.Sprintf(LogSuccess, len(chunks), outputDir))
+		openExplorer(outputDir)
+	}()
+	}
+}
+
+func openExplorer(path string) {
+	switch runtime.GOOS {
+	case "windows":
+		exec.Command("explorer", path).Start()
+	case "darwin":
+		exec.Command("open", path).Start()
+	default:
+		exec.Command("xdg-open", path).Start()
 	}
 }
 
