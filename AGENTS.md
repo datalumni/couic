@@ -24,11 +24,14 @@
 - **Output format**: Always `.csv`, semicolon delimiter, UTF-8 BOM.
 - **Schema**: 10 French columns (Prénom, Nom, DateNaissance, Email, etc.), all strings, dates validated as DD/MM/YYYY.
 - **CI/CD**: GitHub Actions on `v*` tags, native builds per platform, `.zip` archives.
+- **Logos**: Logo at top of UI via embedded `ui/couic.png` (`//go:embed`). App icon set via `a.SetIcon()`. Windows `.exe` icon via `go-winres` generated `.syso`. macOS `.app` icon via `fyne package`.
 
 ## Commands
 
 ```sh
 # Local build (requires libgl1-mesa-dev, xorg-dev, libglfw3-dev)
+# Windows icon: run go-winres first
+go-winres simply --icon ui/couic-icon.png --out scripts/rsrc   # generate rsrc_windows_*.syso under scripts/
 go build -o couic .
 
 # Docker build scripts (no system deps needed)
@@ -43,8 +46,9 @@ docker rm tmp
 
 # Cross-compilation (native per platform in CI)
 GOOS=linux   GOARCH=amd64 go build -o couic .
-GOOS=darwin  GOARCH=amd64 go build -o couic_darwin .
 GOOS=windows GOARCH=amd64 go build -o couic.exe .
+# macOS requires fyne package (not plain go build) to get .app icon
+fyne package -icon ui/couic-icon.png -os darwin -name "Couic"
 
 # Run tests
 go test ./... -v
@@ -68,15 +72,18 @@ couic/
 │   ├── exporter.go     # CSV output (semicolon, BOM, source-order)
 │   └── exporter_test.go# 4 tests
 ├── ui/
+│   ├── couic.png       # App logo (embedded)
 │   ├── strings.go      # French UI string constants
 │   ├── layout.go       # Fyne widget tree
 │   └── handlers.go     # Event handlers & processing pipeline
 ├── scripts/
 │   ├── build.sh        # Bash build script (linux/windows targets)
 │   ├── build.ps1       # PowerShell build script (linux/windows targets)
-│   └── Dockerfile      # Build with all deps included
+│   ├── Dockerfile      # Build with all deps included
+│   └── rsrc_windows_amd64.syso  # Windows exe icon resource
 ├── testdata/           # 6 fixture files
 ├── main.go
+├── .gitignore
 └── .github/workflows/  # Release CI
 ```
 
@@ -87,3 +94,5 @@ couic/
 - Output dir lives next to the source file.
 - UI strings in French via `ui/strings.go`.
 - Column output order follows source-file order.
+- Windows `.exe` icon: `go-winres simply --icon ui/couic-icon.png --out scripts/rsrc` generates `scripts/rsrc_windows_*.syso`. The Dockerfile copies it to the build root before `go build`. For local builds, run the command above first.
+- macOS `.app` icon: `fyne package` auto-converts the PNG to `.icns`. The `.app` bundle is the macOS convention.

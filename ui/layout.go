@@ -1,27 +1,34 @@
-package ui
+﻿package ui
 
 import (
+	_ "embed"
 	"fmt"
 	"strconv"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
+//go:embed couic.png
+var logoData []byte
+
+var LogoResource = fyne.NewStaticResource("couic", logoData)
+
 type UI struct {
-	BrowseBtn     *widget.Button
-	FilePathEntry *widget.Entry
-	RowsInfoLabel *widget.Label
+	BrowseBtn      *widget.Button
+	FilePathEntry  *widget.Entry
+	RowsInfoLabel  *widget.Label
 	HasHeaderCheck *widget.Check
-	PrefixEntry   *widget.Entry
-	ModeGroup     *widget.RadioGroup
-	NumEntry      *widget.Entry
-	CalcLabel     *widget.Label
-	ValidateBtn   *widget.Button
-	ProcessBtn    *widget.Button
-	LogArea       *widget.Entry
+	PrefixEntry    *widget.Entry
+	ModeGroup      *widget.RadioGroup
+	NumEntry       *widget.Entry
+	CalcLabel      *widget.Label
+	ValidateBtn    *widget.Button
+	ProcessBtn     *widget.Button
+	LogArea        *widget.Entry
 
 	totalRows int
 }
@@ -71,6 +78,10 @@ func BuildUI() *UI {
 }
 
 func (ui *UI) PopulateWindow(win fyne.Window) {
+	logo := canvas.NewImageFromResource(LogoResource)
+	logo.FillMode = canvas.ImageFillContain
+	logo.SetMinSize(fyne.NewSize(600, 80))
+
 	fileCard := widget.NewCard(LblCardFile, "", container.NewVBox(
 		ui.BrowseBtn,
 		ui.FilePathEntry,
@@ -101,6 +112,7 @@ func (ui *UI) PopulateWindow(win fyne.Window) {
 
 	content := container.NewPadded(
 		container.NewVBox(
+			logo,
 			fileCard,
 			optionsCard,
 			logCard,

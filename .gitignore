@@ -1,4 +1,5 @@
-couic
+﻿couic
 couic.exe
 *.zip
 /tmp/
+scripts/rsrc_windows_*
