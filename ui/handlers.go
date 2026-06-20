@@ -1,4 +1,4 @@
-package ui
+﻿package ui
 
 import (
 	"fmt"
@@ -52,14 +52,14 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 			}
 
 			state = &loadState{result: res, path: path}
-			ui.FilePathEntry.SetText(path)
-			ui.RowsInfoLabel.SetText(fmt.Sprintf(LblRowsFound, res.TotalRows))
-
-			ui.HasHeaderCheck.SetChecked(res.HasHeader)
-
-			prefillSplitParams(ui, res.TotalRows)
-			ui.ValidateBtn.Enable()
-			ui.ProcessBtn.Enable()
+			fyne.Do(func() {
+				ui.FilePathEntry.SetText(path)
+				ui.RowsInfoLabel.SetText(fmt.Sprintf(LblRowsFound, res.TotalRows))
+				ui.HasHeaderCheck.SetChecked(res.HasHeader)
+				prefillSplitParams(ui, res.TotalRows)
+				ui.ValidateBtn.Enable()
+				ui.ProcessBtn.Enable()
+			})
 		}()
 	}
 
@@ -142,7 +142,9 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 				return
 			}
 
-			ui.LogArea.SetText("")
+			fyne.Do(func() {
+				ui.LogArea.SetText("")
+			})
 			logMessage(ui, LogStart)
 
 			var chunks [][]core.Record
@@ -179,18 +181,22 @@ func prefillSplitParams(ui *UI, totalRows int) {
 		return
 	}
 
-	ui.ModeGroup.Selected = LblModeFiles
-	ui.ModeGroup.Refresh()
+	fyne.Do(func() {
+		ui.ModeGroup.Selected = LblModeFiles
+		ui.ModeGroup.Refresh()
 
-	x := (totalRows + 500) / 1000
-	if x < 1 {
-		x = 1
-	}
-	ui.NumEntry.SetText(strconv.Itoa(x))
+		x := (totalRows + 500) / 1000
+		if x < 1 {
+			x = 1
+		}
+		ui.NumEntry.SetText(strconv.Itoa(x))
+	})
 }
 
 func logMessage(ui *UI, msg string) {
-	ui.LogArea.SetText(ui.LogArea.Text + msg + "\n")
+	fyne.Do(func() {
+		ui.LogArea.SetText(ui.LogArea.Text + msg + "\n")
+	})
 }
 
 func logError(ui *UI, msg string) {
