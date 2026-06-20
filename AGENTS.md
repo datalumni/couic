@@ -1,4 +1,4 @@
-# Couic — Agent Guide
+﻿# Couic — Agent Guide
 
 **Project**: Cross-platform desktop app (Go + Fyne) that splits CSV/Excel files by rows or file count.
 
@@ -31,8 +31,12 @@
 # Local build (requires libgl1-mesa-dev, xorg-dev, libglfw3-dev)
 go build -o couic .
 
-# Docker build (no system deps needed)
-docker build -t couic-builder .
+# Docker build scripts (no system deps needed)
+./scripts/build.sh linux     # or: .\scripts\build.ps1 linux
+./scripts/build.sh windows   # or: .\scripts\build.ps1 windows
+
+# Docker build (manual — or just use the scripts above)
+docker build -f scripts/Dockerfile -t couic-builder .
 docker create --name tmp couic-builder
 docker cp tmp:/couic ./couic
 docker rm tmp
@@ -67,9 +71,12 @@ couic/
 │   ├── strings.go      # French UI string constants
 │   ├── layout.go       # Fyne widget tree
 │   └── handlers.go     # Event handlers & processing pipeline
+├── scripts/
+│   ├── build.sh        # Bash build script (linux/windows targets)
+│   ├── build.ps1       # PowerShell build script (linux/windows targets)
+│   └── Dockerfile      # Build with all deps included
 ├── testdata/           # 6 fixture files
 ├── main.go
-├── Dockerfile          # Build with all deps included
 └── .github/workflows/  # Release CI
 ```
 
