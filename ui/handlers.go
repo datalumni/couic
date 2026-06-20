@@ -54,7 +54,7 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 			state = &loadState{result: res, path: path}
 			fyne.Do(func() {
 				ui.FilePathEntry.SetText(path)
-				ui.RowsInfoLabel.SetText(fmt.Sprintf(LblRowsFound, res.TotalRows))
+				ui.SetRowsInfo(res.TotalRows)
 				ui.HasHeaderCheck.SetChecked(res.HasHeader)
 				prefillSplitParams(ui, res.TotalRows)
 				ui.ValidateBtn.Enable()
