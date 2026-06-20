@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="ui/couic.png">
-  <img alt="Couic logo" src="ui/couic.png" width="280">
+  <img alt="Couic logo" src="https://github.com/datalumni/couic/blob/main/ui/couic.png" width="280">
 </picture>
 
 # Couic
