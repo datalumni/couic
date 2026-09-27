@@ -185,3 +185,37 @@ func TestLoadCSV_SingleColumnDoesNotTriggerHeader(t *testing.T) {
 		t.Fatalf("expected 3 data rows, got %d", res.TotalRows)
 	}
 }
+
+func TestExpandShortYear(t *testing.T) {
+	cases := map[string]string{
+		"01-06-26":   "01-06-2026",
+		"01/06/26":   "01/06/2026",
+		"15/03/90":   "15/03/1990",
+		"15/03/1990": "15/03/1990",
+		"":           "",
+		"not-a-date": "not-a-date",
+	}
+	for in, want := range cases {
+		if got := expandShortYear(in); got != want {
+			t.Errorf("expandShortYear(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestLoadCSV_NormalizesShortYearDates(t *testing.T) {
+	csv := "Prénom de l'utilisateur,Nom de l'utilisateur,Date de naissance,Email,Référence externe,Catégorie,Date de fin,Diplôme,Site,N° RNCP\n" +
+		"Jean,Dupont,01-06-26,jean.dupont@example.com,REF001,A,31/12/25,Master,Paris,RNCP-001\n"
+	path := writeTempCSV(t, "short_year.csv", csv)
+
+	result, err := LoadFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	rec := result.Records[0]
+	if rec.DateNaissance != "01-06-2026" {
+		t.Errorf("DateNaissance = %q, want %q", rec.DateNaissance, "01-06-2026")
+	}
+	if rec.DateFin != "31/12/2025" {
+		t.Errorf("DateFin = %q, want %q", rec.DateFin, "31/12/2025")
+	}
+}

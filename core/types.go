@@ -1,6 +1,9 @@
 package core
 
-import "reflect"
+import (
+	"reflect"
+	"strings"
+)
 
 type Record struct {
 	PrenomUtilisateur string `csv:"Prénom de l'utilisateur" validate:"required,min=1"`
@@ -19,21 +22,33 @@ type FieldInfo struct {
 	Index  int
 	CSVTag string
 	Name   string
+	IsDate bool
 }
 
 var recordFields []FieldInfo
+var dateFieldIndices map[int]bool
 
 func init() {
 	t := reflect.TypeOf(Record{})
 	recordFields = make([]FieldInfo, 0, t.NumField())
+	dateFieldIndices = make(map[int]bool)
 	for i := range t.NumField() {
 		f := t.Field(i)
+		isDate := strings.Contains(f.Tag.Get("validate"), "datetime=")
 		recordFields = append(recordFields, FieldInfo{
 			Index:  i,
 			CSVTag: f.Tag.Get("csv"),
 			Name:   f.Name,
+			IsDate: isDate,
 		})
+		if isDate {
+			dateFieldIndices[i] = true
+		}
 	}
+}
+
+func IsDateField(fieldIdx int) bool {
+	return dateFieldIndices[fieldIdx]
 }
 
 func Fields() []FieldInfo {

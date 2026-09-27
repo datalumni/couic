@@ -8,10 +8,29 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/xuri/excelize/v2"
 )
+
+var shortYearDateRe = regexp.MustCompile(`^(\d{1,2})([/-])(\d{1,2})[/-](\d{2})$`)
+
+// expandShortYear turns a "01-06-26" style date into "01-06-2026".
+// ponytail: 00-29 -> 20xx, 30-99 -> 19xx pivot; wrong for dates >30y old with a 2-digit year, adjust pivot if that surfaces.
+func expandShortYear(s string) string {
+	m := shortYearDateRe.FindStringSubmatch(s)
+	if m == nil {
+		return s
+	}
+	yy, _ := strconv.Atoi(m[4])
+	century := "19"
+	if yy <= 29 {
+		century = "20"
+	}
+	return m[1] + m[2] + m[3] + m[2] + century + m[4]
+}
 
 type LoadResult struct {
 	Records     []Record
@@ -249,7 +268,11 @@ func rowToRecord(row []string, colOrder []int) (*Record, error) {
 		if fieldIdx < 0 || fieldIdx >= rv.NumField() || j >= len(row) {
 			continue
 		}
-		rv.Field(fieldIdx).SetString(strings.TrimSpace(row[j]))
+		val := strings.TrimSpace(row[j])
+		if IsDateField(fieldIdx) {
+			val = expandShortYear(val)
+		}
+		rv.Field(fieldIdx).SetString(val)
 	}
 	return rec, nil
 }
