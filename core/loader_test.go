@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/xuri/excelize/v2"
 )
 
 func writeTempCSV(t *testing.T, name, content string) string {
@@ -22,7 +24,7 @@ func TestLoadCSV_WithHeaderSemicolon(t *testing.T) {
 		"Marie;Curie;;marie@example.com;;B;;;Lyon;\n"
 	path := writeTempCSV(t, "test.csv", csv)
 
-	res, err := LoadFile(path)
+	res, err := LoadFile(path, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +56,7 @@ func TestLoadCSV_WithHeaderComma(t *testing.T) {
 		"Jean,Dupont,jean@example.com,15/03/1990,A,REF123,31/12/2025,Master,Paris,RNCP12345\n"
 	path := writeTempCSV(t, "test.csv", csv)
 
-	res, err := LoadFile(path)
+	res, err := LoadFile(path, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +73,7 @@ func TestLoadCSV_NoHeader(t *testing.T) {
 		"Marie;Curie;;marie@example.com;;B;;;Lyon;\n"
 	path := writeTempCSV(t, "test.csv", csv)
 
-	res, err := LoadFile(path)
+	res, err := LoadFile(path, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +87,7 @@ func TestLoadCSV_NoHeader(t *testing.T) {
 
 func TestLoadCSV_EmptyFile(t *testing.T) {
 	path := writeTempCSV(t, "empty.csv", "")
-	_, err := LoadFile(path)
+	_, err := LoadFile(path, "")
 	if err == nil {
 		t.Fatal("expected error for empty file")
 	}
@@ -95,7 +97,7 @@ func TestLoadCSV_HeaderOnly(t *testing.T) {
 	csv := "Prénom de l'utilisateur;Nom de l'utilisateur;Date de naissance;Email;Référence externe;Catégorie;Date de fin;Diplôme;Site;N° RNCP\n"
 	path := writeTempCSV(t, "header.csv", csv)
 
-	res, err := LoadFile(path)
+	res, err := LoadFile(path, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +114,7 @@ func TestLoadCSV_CaseInsensitiveHeader(t *testing.T) {
 		"Jean;Dupont;jean@example.com;A\n"
 	path := writeTempCSV(t, "test.csv", csv)
 
-	res, err := LoadFile(path)
+	res, err := LoadFile(path, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +133,7 @@ func TestLoadCSV_DelimiterAutoDetectSemicolon(t *testing.T) {
 	csv := "Prénom;Nom;Email;Catégorie\nJean;Dupont;jean@example.com;A\n"
 	path := writeTempCSV(t, "test.csv", csv)
 
-	res, err := LoadFile(path)
+	res, err := LoadFile(path, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +146,7 @@ func TestLoadCSV_UnsupportedExtension(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.txt")
 	os.WriteFile(path, []byte("a,b,c\n1,2,3\n"), 0644)
-	_, err := LoadFile(path)
+	_, err := LoadFile(path, "")
 	if err == nil {
 		t.Fatal("expected error for unsupported extension")
 	}
@@ -155,7 +157,7 @@ func TestLoadCSV_ColumnOrderPreservesSourceOrder(t *testing.T) {
 		"jean@example.com;Jean;Dupont;A\n"
 	path := writeTempCSV(t, "test.csv", csv)
 
-	res, err := LoadFile(path)
+	res, err := LoadFile(path, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +176,7 @@ func TestLoadCSV_SingleColumnDoesNotTriggerHeader(t *testing.T) {
 	csv := "Juste un nom\nJean\nMarie\n"
 	path := writeTempCSV(t, "test.csv", csv)
 
-	res, err := LoadFile(path)
+	res, err := LoadFile(path, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +209,7 @@ func TestLoadCSV_NormalizesShortYearDates(t *testing.T) {
 		"Jean,Dupont,01-06-26,jean.dupont@example.com,REF001,A,31/12/25,Master,Paris,RNCP-001\n"
 	path := writeTempCSV(t, "short_year.csv", csv)
 
-	result, err := LoadFile(path)
+	result, err := LoadFile(path, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -217,5 +219,36 @@ func TestLoadCSV_NormalizesShortYearDates(t *testing.T) {
 	}
 	if rec.DateFin != "31/12/2025" {
 		t.Errorf("DateFin = %q, want %q", rec.DateFin, "31/12/2025")
+	}
+}
+
+func TestLoadExcel_SheetSelection(t *testing.T) {
+	f := excelize.NewFile()
+	header := []any{"Prénom de l'utilisateur", "Nom de l'utilisateur", "Date de naissance", "Email", "Référence externe", "Catégorie", "Date de fin", "Diplôme", "Site", "N° RNCP"}
+	f.SetSheetRow("Sheet1", "A1", &header)
+	f.SetSheetRow("Sheet1", "A2", &[]any{"Jean", "Dupont"})
+	f.NewSheet("Autre")
+	f.SetSheetRow("Autre", "A1", &header)
+	f.SetSheetRow("Autre", "A2", &[]any{"Marie", "Curie"})
+	f.SetSheetRow("Autre", "A3", &[]any{"Paul", "Martin"})
+	path := filepath.Join(t.TempDir(), "multi.xlsx")
+	if err := f.SaveAs(path); err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := LoadFile(path, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Sheet != "Sheet1" || len(res.Sheets) != 2 || res.TotalRows != 1 {
+		t.Fatalf("default: sheet=%q sheets=%v rows=%d", res.Sheet, res.Sheets, res.TotalRows)
+	}
+
+	res, err = LoadFile(path, "Autre")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Sheet != "Autre" || res.TotalRows != 2 || res.Records[0].PrenomUtilisateur != "Marie" {
+		t.Fatalf("Autre: sheet=%q rows=%d first=%+v", res.Sheet, res.TotalRows, res.Records[0])
 	}
 }

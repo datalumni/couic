@@ -4,7 +4,7 @@
 
 ## Current state
 
-- Full implementation complete. All 31 unit tests pass.
+- Full implementation complete. All 32 unit tests pass.
 - Missing system libraries (X11/GL) in this env prevent linking the Fyne binary.
 
 ## Key facts
@@ -67,7 +67,7 @@ couic/
 │   ├── validator.go    # Struct-tag validation, French errors
 │   ├── loader.go       # CSV/Excel loading, header detection
 │   ├── splitter.go     # File splitting logic
-│   └── *_test.go       # 27 tests
+│   └── *_test.go       # 28 tests
 ├── export/
 │   ├── exporter.go     # CSV output (semicolon, BOM, source-order)
 │   └── exporter_test.go# 4 tests
@@ -90,7 +90,7 @@ couic/
 ## Conventions
 
 - Schema lives in a hardcoded struct with `csv:` tags and `validate:` tags — no dynamic schema loading.
-- Abort on first validation failure; dump all row errors to the UI log.
+- Validate all rows at once; log the count of invalid rows, then one line per row grouping its field errors.
 - Output dir lives next to the source file.
 - UI strings in French via `ui/strings.go`.
 - Column output order follows source-file order.

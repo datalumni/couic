@@ -37,15 +37,18 @@ type LoadResult struct {
 	ColumnOrder []int
 	HasHeader   bool
 	TotalRows   int
+	Sheets      []string // Excel only: all sheet names
+	Sheet       string   // Excel only: sheet actually read
 }
 
-func LoadFile(path string) (*LoadResult, error) {
+// LoadFile loads a CSV or Excel file. For Excel, sheet picks the sheet to read ("" = first).
+func LoadFile(path, sheet string) (*LoadResult, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".csv":
 		return loadCSV(path)
 	case ".xlsx":
-		return loadExcel(path)
+		return loadExcel(path, sheet)
 	default:
 		return nil, fmt.Errorf("format non supporté : %s", ext)
 	}
@@ -85,7 +88,7 @@ func loadCSV(path string) (*LoadResult, error) {
 	return rowsToRecords(rawRows)
 }
 
-func loadExcel(path string) (*LoadResult, error) {
+func loadExcel(path, sheet string) (*LoadResult, error) {
 	f, err := excelize.OpenFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("impossible d'ouvrir le fichier Excel : %w", err)
@@ -96,16 +99,16 @@ func loadExcel(path string) (*LoadResult, error) {
 	if len(sheets) == 0 {
 		return nil, fmt.Errorf("le classeur ne contient aucune feuille")
 	}
-	if len(sheets) > 1 {
-		fmt.Printf("Attention : le classeur contient %d feuilles. Seule la première (%s) sera lue.\n", len(sheets), sheets[0])
+	if sheet == "" {
+		sheet = sheets[0]
 	}
 
-	rows, err := f.GetRows(sheets[0])
+	rows, err := f.GetRows(sheet)
 	if err != nil {
-		return nil, fmt.Errorf("erreur de lecture de la feuille %s : %w", sheets[0], err)
+		return nil, fmt.Errorf("erreur de lecture de la feuille %s : %w", sheet, err)
 	}
 	if len(rows) == 0 {
-		return nil, fmt.Errorf("la feuille est vide")
+		return nil, fmt.Errorf("la feuille %s est vide", sheet)
 	}
 
 	rawRows := make([][]string, len(rows))
@@ -113,7 +116,13 @@ func loadExcel(path string) (*LoadResult, error) {
 		rawRows[i] = row
 	}
 
-	return rowsToRecords(rawRows)
+	res, err := rowsToRecords(rawRows)
+	if err != nil {
+		return nil, err
+	}
+	res.Sheets = sheets
+	res.Sheet = sheet
+	return res, nil
 }
 
 func sampleLines(r io.Reader, n int) ([]string, error) {

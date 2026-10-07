@@ -79,7 +79,7 @@ func TestValidateRecords_BadDate(t *testing.T) {
 	}
 }
 
-func TestValidateRecords_StopsAtFirstInvalidRow(t *testing.T) {
+func TestValidateRecords_ReportsAllInvalidRows(t *testing.T) {
 	recs := []Record{
 		{
 			PrenomUtilisateur: "Jean",
@@ -99,18 +99,20 @@ func TestValidateRecords_StopsAtFirstInvalidRow(t *testing.T) {
 			Email:             "marie@example.com",
 			Categorie:         "B",
 		},
+		{
+			PrenomUtilisateur: "Paul",
+			NomUtilisateur:    "Martin",
+			Email:             "bad",
+			Categorie:         "C",
+		},
 	}
 	errs := ValidateRecords(recs)
-	if len(errs) == 0 {
-		t.Fatal("expected errors")
-	}
-	if len(errs) > 4 {
-		t.Fatalf("expected at most 4 errors (one row), got %d", len(errs))
-	}
+	rows := map[int]bool{}
 	for _, e := range errs {
-		if e.Row != 2 {
-			t.Errorf("expected all errors on row 2, got row %d", e.Row)
-		}
+		rows[e.Row] = true
+	}
+	if len(rows) != 2 || !rows[2] || !rows[4] {
+		t.Fatalf("expected errors on rows 2 and 4, got %v", errs)
 	}
 }
 

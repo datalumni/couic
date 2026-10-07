@@ -20,6 +20,7 @@ import (
 type loadState struct {
 	result *core.LoadResult
 	path   string
+	sheet  string
 }
 
 type getRecordsResult struct {
@@ -34,7 +35,7 @@ func getRecords(state *loadState, hasHeader bool) (*getRecordsResult, error) {
 		return &getRecordsResult{state.result.Records, state.result.ColumnOrder}, nil
 	}
 
-	relRes, loadErr := core.LoadFile(state.path)
+	relRes, loadErr := core.LoadFile(state.path, state.sheet)
 	if loadErr != nil {
 		return nil, loadErr
 	}
@@ -45,17 +46,25 @@ func getRecords(state *loadState, hasHeader bool) (*getRecordsResult, error) {
 func SetupHandlers(ui *UI, win fyne.Window) {
 	var state *loadState
 
-	loadFile := func(path string) {
+	loadFile := func(path, sheet string) {
 		go func() {
-			res, loadErr := core.LoadFile(path)
+			res, loadErr := core.LoadFile(path, sheet)
 			if loadErr != nil {
 				logError(ui, loadErr.Error())
 				return
 			}
 
-			state = &loadState{result: res, path: path}
+			state = &loadState{result: res, path: path, sheet: res.Sheet}
 			fyne.Do(func() {
 				ui.FilePathEntry.SetText(path)
+				if len(res.Sheets) > 0 {
+					ui.SheetSelect.Options = res.Sheets
+					ui.SheetSelect.Selected = res.Sheet // direct assign: SetSelected would fire OnChanged and reload
+					ui.SheetSelect.Refresh()
+					ui.SheetSelect.Show()
+				} else {
+					ui.SheetSelect.Hide()
+				}
 				ui.SetRowsInfo(res.TotalRows)
 				ui.HasHeaderCheck.SetChecked(res.HasHeader)
 				prefillSplitParams(ui, res.TotalRows)
@@ -63,6 +72,12 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 				ui.ProcessBtn.Enable()
 			})
 		}()
+	}
+
+	ui.SheetSelect.OnChanged = func(sheet string) {
+		if state != nil && sheet != state.sheet {
+			loadFile(state.path, sheet)
+		}
 	}
 
 	ui.BrowseBtn.OnTapped = func() {
@@ -75,7 +90,7 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 				return
 			}
 			defer reader.Close()
-			loadFile(reader.URI().Path())
+			loadFile(reader.URI().Path(), "")
 		}, win)
 		fd.SetFilter(storage.NewExtensionFileFilter([]string{".csv", ".xlsx"}))
 		fd.Show()
@@ -84,7 +99,7 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 	ui.FilePathEntry.OnSubmitted = func(path string) {
 		path = strings.TrimSpace(path)
 		if path != "" {
-			loadFile(path)
+			loadFile(path, "")
 		}
 	}
 
@@ -92,7 +107,7 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 		for _, uri := range uris {
 			ext := filepath.Ext(uri.Name())
 			if ext == ".csv" || ext == ".xlsx" {
-				loadFile(uri.Path())
+				loadFile(uri.Path(), "")
 				return
 			}
 		}
@@ -117,9 +132,7 @@ func SetupHandlers(ui *UI, win fyne.Window) {
 				logMessage(ui, LogValidateNone)
 				return
 			}
-			for _, e := range errs {
-				logMessage(ui, e.String())
-			}
+			logMessage(ui, formatValidation(errs, len(gr.records)))
 		}()
 	}
 
@@ -211,6 +224,20 @@ func logMessage(ui *UI, msg string) {
 	fyne.Do(func() {
 		ui.LogArea.SetText(ui.LogArea.Text + msg + "\n")
 	})
+}
+
+// formatValidation groups errors (ordered by row) into one log line per row.
+func formatValidation(errs []core.ValidationError, total int) string {
+	var rows []string
+	for i, e := range errs {
+		item := fmt.Sprintf("%s (%s)", e.Field, core.FrenchError(e.Tag))
+		if i > 0 && errs[i-1].Row == e.Row {
+			rows[len(rows)-1] += " · " + item
+		} else {
+			rows = append(rows, fmt.Sprintf("  Ligne %d : %s", e.Row, item))
+		}
+	}
+	return fmt.Sprintf(LogValidationFail, len(rows), total) + "\n" + strings.Join(rows, "\n")
 }
 
 func logError(ui *UI, msg string) {

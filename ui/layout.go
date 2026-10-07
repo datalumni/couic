@@ -21,6 +21,7 @@ var LogoResource = fyne.NewStaticResource("couic", logoData)
 type UI struct {
 	BrowseBtn      *widget.Button
 	FilePathEntry  *widget.Entry
+	SheetSelect    *widget.Select
 	RowsInfoLabel  *widget.Label
 	HasHeaderCheck *widget.Check
 	PrefixEntry    *widget.Entry
@@ -42,6 +43,10 @@ func BuildUI() *UI {
 
 	ui.FilePathEntry = widget.NewEntry()
 	ui.FilePathEntry.SetPlaceHolder(LblFilePlaceholder)
+
+	ui.SheetSelect = widget.NewSelect(nil, nil)
+	ui.SheetSelect.PlaceHolder = LblSheet
+	ui.SheetSelect.Hide()
 
 	ui.RowsInfoLabel = widget.NewLabel("")
 
@@ -103,6 +108,7 @@ func (ui *UI) PopulateWindow(win fyne.Window) {
 		)),
 		padRight(container.NewVBox(
 			container.NewBorder(nil, nil, nil, ui.BrowseBtn, ui.FilePathEntry),
+			ui.SheetSelect,
 			ui.RowsInfoLabel,
 		)),
 		padLeft(container.NewVBox(
@@ -119,7 +125,7 @@ func (ui *UI) PopulateWindow(win fyne.Window) {
 	)
 
 	content := container.NewPadded(
-		container.NewBorder(grid, nil, nil, nil, ui.LogArea),
+		container.NewBorder(grid, nil, nil, nil, container.NewThemeOverride(ui.LogArea, logTheme{theme.LightTheme()})),
 	)
 	win.SetContent(content)
 }
@@ -153,4 +159,14 @@ func (ui *UI) updateCalcLabel() {
 		rowsPerFile := (ui.totalRows + num - 1) / num
 		ui.CalcLabel.SetText(fmt.Sprintf(LblRowsPerFile, rowsPerFile))
 	}
+}
+
+// logTheme darkens disabled text so the read-only log stays legible.
+type logTheme struct{ fyne.Theme }
+
+func (t logTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
+	if n == theme.ColorNameDisabled {
+		return color.NRGBA{R: 0x33, G: 0x33, B: 0x33, A: 0xff}
+	}
+	return t.Theme.Color(n, v)
 }

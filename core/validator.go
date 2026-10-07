@@ -19,11 +19,11 @@ type ValidationError struct {
 }
 
 func (e ValidationError) String() string {
-	msg := frenchError(e.Tag)
+	msg := FrenchError(e.Tag)
 	return fmt.Sprintf("Ligne %d : %s : %s", e.Row, e.Field, msg)
 }
 
-func frenchError(tag string) string {
+func FrenchError(tag string) string {
 	switch tag {
 	case "required":
 		return "champ obligatoire"
@@ -44,13 +44,13 @@ func ValidateRecords(records []Record) []ValidationError {
 		nameToLabel[fi.Name] = fi.CSVTag
 	}
 
+	var out []ValidationError
 	for i, rec := range records {
 		errs := validate.Struct(rec)
 		if errs == nil {
 			continue
 		}
 
-		var out []ValidationError
 		for _, verr := range errs.(validator.ValidationErrors) {
 			fieldName := nameToLabel[verr.StructField()]
 			if fieldName == "" {
@@ -62,9 +62,6 @@ func ValidateRecords(records []Record) []ValidationError {
 				Tag:   verr.Tag(),
 			})
 		}
-		if len(out) > 0 {
-			return out
-		}
 	}
-	return nil
+	return out
 }
